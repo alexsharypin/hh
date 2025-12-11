@@ -13,19 +13,27 @@ import (
 	"go.uber.org/zap"
 )
 
-type CompanyHandler struct {
-	service *service.CompanyService
+type CompanyHandler interface {
+	Create(w http.ResponseWriter, r *http.Request)
+	Update(w http.ResponseWriter, r *http.Request)
+	Delete(w http.ResponseWriter, r *http.Request)
+	List(w http.ResponseWriter, r *http.Request)
+	GetByID(w http.ResponseWriter, r *http.Request)
+}
+
+type companyHandler struct {
+	service service.CompanyService
 	logger  *zap.Logger
 }
 
-func NewCompanyHandler(service *service.CompanyService, logger *zap.Logger) *CompanyHandler {
-	return &CompanyHandler{
+func NewCompanyHandler(service service.CompanyService, logger *zap.Logger) CompanyHandler {
+	return &companyHandler{
 		service: service,
 		logger:  logger,
 	}
 }
 
-func (h *CompanyHandler) Create(w http.ResponseWriter, r *http.Request) {
+func (h *companyHandler) Create(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	input := &entity.CreateCompanyInput{}
@@ -36,7 +44,6 @@ func (h *CompanyHandler) Create(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result, err := h.service.Create(ctx, input)
-
 	if err != nil {
 		HandleError(w, h.logger, err)
 		return
@@ -45,11 +52,10 @@ func (h *CompanyHandler) Create(w http.ResponseWriter, r *http.Request) {
 	HandleSuccess(w, http.StatusCreated, result)
 }
 
-func (h *CompanyHandler) Update(w http.ResponseWriter, r *http.Request) {
+func (h *companyHandler) Update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	id, err := parseIDFromURL(r)
-
 	if err != nil {
 		HandleError(w, h.logger, err)
 		return
@@ -63,7 +69,6 @@ func (h *CompanyHandler) Update(w http.ResponseWriter, r *http.Request) {
 	}
 
 	result, err := h.service.Update(ctx, id, input)
-
 	if err != nil {
 		HandleError(w, h.logger, err)
 		return
@@ -72,11 +77,10 @@ func (h *CompanyHandler) Update(w http.ResponseWriter, r *http.Request) {
 	HandleSuccess(w, http.StatusOK, result)
 }
 
-func (h *CompanyHandler) Delete(w http.ResponseWriter, r *http.Request) {
+func (h *companyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	id, err := parseIDFromURL(r)
-
 	if err != nil {
 		HandleError(w, h.logger, err)
 		return
@@ -90,11 +94,10 @@ func (h *CompanyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	w.WriteHeader(http.StatusNoContent)
 }
 
-func (h *CompanyHandler) List(w http.ResponseWriter, r *http.Request) {
+func (h *companyHandler) List(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	result, err := h.service.GetAll(ctx)
-
 	if err != nil {
 		HandleError(w, h.logger, err)
 		return
@@ -103,18 +106,16 @@ func (h *CompanyHandler) List(w http.ResponseWriter, r *http.Request) {
 	HandleSuccess(w, http.StatusOK, result)
 }
 
-func (h *CompanyHandler) GetByID(w http.ResponseWriter, r *http.Request) {
+func (h *companyHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
 	id, err := parseIDFromURL(r)
-
 	if err != nil {
 		HandleError(w, h.logger, err)
 		return
 	}
 
 	result, err := h.service.GetByID(ctx, id)
-
 	if err != nil {
 		HandleError(w, h.logger, err)
 		return

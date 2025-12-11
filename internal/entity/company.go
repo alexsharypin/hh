@@ -100,7 +100,7 @@ func (c *Company) Validate() error {
 		})
 	}
 
-	if c.Website != nil && strings.TrimSpace(*c.Website) != "" {
+	if c.Website != nil {
 		website := strings.TrimSpace(*c.Website)
 		u, err := url.Parse(website)
 		if err != nil || (u.Scheme != "http" && u.Scheme != "https") {

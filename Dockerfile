@@ -11,12 +11,9 @@ RUN go mod download
 
 COPY . .
 
-# Собираем бинарник и даем права
-RUN go build -o hh ./cmd/hh
+RUN go build -buildvcs=false -o hh ./cmd/hh
 RUN chmod +x hh
 
 EXPOSE 8080
 
-CMD ["CompileDaemon", "--build=go build -o hh ./cmd/hh", "--command=./hh", "--directory=./", "--include=cmd/hh|internal", "--exclude=vendor|\\.git"]
-
-# docker run --name myapp-dev:latest -p 3000:3000 -v $(pwd):/app myapp-dev:latest
+CMD ["CompileDaemon", "--build=go build -buildvcs=false -o hh ./cmd/hh", "--command=./hh", "--directory=./", "--include=cmd/hh|internal", "--exclude=vendor|\\.git"]
