@@ -1,0 +1,2 @@
+ALTER TABLE companies
+DROP CONSTRAINT IF EXISTS unique_title;

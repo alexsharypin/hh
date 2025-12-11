@@ -1,0 +1,49 @@
+version: "3.9"
+
+services:
+  app:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: myapp-dev
+    volumes:
+      - .:/app
+    ports:
+      - "3000:3000"
+    environment:
+      DB_HOST: db
+      DB_PORT: 5432
+      DB_USER: postgres
+      DB_PASSWORD: password
+      DB_NAME: test
+    depends_on:
+      - db
+
+  db:
+    image: postgres:16-alpine
+    container_name: myapp-db
+    environment:
+      POSTGRES_DB: test
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+    ports:
+      - "5432:5432"
+    volumes:
+      - dbdata:/var/lib/postgresql/data
+
+
+  migrate:
+    image: migrate/migrate:4
+    depends_on:
+      - db
+    volumes:
+      - ./migrations:/migrations
+    command: [
+      "-path", "/migrations",
+      "-database", "postgres://postgres:password@db:5432/test?sslmode=disable",
+      "up"
+    ]
+    restart: "on-failure"
+
+volumes:
+  dbdata:

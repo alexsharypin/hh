@@ -1,0 +1,138 @@
+package handler
+
+import (
+	"encoding/json"
+	"net/http"
+
+	"github.com/alexsharypin/hh/internal/common"
+	"github.com/alexsharypin/hh/internal/entity"
+	"github.com/alexsharypin/hh/internal/service"
+	"github.com/go-chi/chi"
+
+	"github.com/google/uuid"
+	"go.uber.org/zap"
+)
+
+type CompanyHandler struct {
+	service *service.CompanyService
+	logger  *zap.Logger
+}
+
+func NewCompanyHandler(service *service.CompanyService, logger *zap.Logger) *CompanyHandler {
+	return &CompanyHandler{
+		service: service,
+		logger:  logger,
+	}
+}
+
+func (h *CompanyHandler) Create(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	input := &entity.CreateCompanyInput{}
+
+	if err := json.NewDecoder(r.Body).Decode(input); err != nil {
+		HandleError(w, h.logger, common.NewInvalidRequestBody())
+		return
+	}
+
+	result, err := h.service.Create(ctx, input)
+
+	if err != nil {
+		HandleError(w, h.logger, err)
+		return
+	}
+
+	HandleSuccess(w, http.StatusCreated, result)
+}
+
+func (h *CompanyHandler) Update(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	id, err := parseIDFromURL(r)
+
+	if err != nil {
+		HandleError(w, h.logger, err)
+		return
+	}
+
+	input := &entity.UpdateCompanyInput{}
+
+	if err := json.NewDecoder(r.Body).Decode(input); err != nil {
+		HandleError(w, h.logger, common.NewInvalidRequestBody())
+		return
+	}
+
+	result, err := h.service.Update(ctx, id, input)
+
+	if err != nil {
+		HandleError(w, h.logger, err)
+		return
+	}
+
+	HandleSuccess(w, http.StatusOK, result)
+}
+
+func (h *CompanyHandler) Delete(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	id, err := parseIDFromURL(r)
+
+	if err != nil {
+		HandleError(w, h.logger, err)
+		return
+	}
+
+	if err := h.service.Delete(ctx, id); err != nil {
+		HandleError(w, h.logger, err)
+		return
+	}
+
+	w.WriteHeader(http.StatusNoContent)
+}
+
+func (h *CompanyHandler) List(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	result, err := h.service.GetAll(ctx)
+
+	if err != nil {
+		HandleError(w, h.logger, err)
+		return
+	}
+
+	HandleSuccess(w, http.StatusOK, result)
+}
+
+func (h *CompanyHandler) GetByID(w http.ResponseWriter, r *http.Request) {
+	ctx := r.Context()
+
+	id, err := parseIDFromURL(r)
+
+	if err != nil {
+		HandleError(w, h.logger, err)
+		return
+	}
+
+	result, err := h.service.GetByID(ctx, id)
+
+	if err != nil {
+		HandleError(w, h.logger, err)
+		return
+	}
+
+	HandleSuccess(w, http.StatusOK, result)
+}
+
+func parseIDFromURL(r *http.Request) (uuid.UUID, error) {
+	idStr := chi.URLParam(r, "id")
+	if idStr == "" {
+		return uuid.Nil, common.NewInvalidRequestParams()
+	}
+
+	id, err := uuid.Parse(idStr)
+	if err != nil {
+		return uuid.Nil, common.NewInvalidRequestParams()
+	}
+
+	return id, nil
+}

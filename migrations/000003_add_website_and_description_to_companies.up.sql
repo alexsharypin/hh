@@ -1,0 +1,3 @@
+ALTER TABLE companies
+ADD COLUMN website VARCHAR(255),
+ADD COLUMN description TEXT NOT NULL DEFAULT '';
