@@ -6,10 +6,9 @@ import (
 
 	"github.com/alexsharypin/hh/internal/common"
 	"github.com/alexsharypin/hh/internal/entity"
+	"github.com/alexsharypin/hh/internal/lib"
 	"github.com/alexsharypin/hh/internal/service"
-	"github.com/go-chi/chi"
 
-	"github.com/google/uuid"
 	"go.uber.org/zap"
 )
 
@@ -55,7 +54,7 @@ func (h *companyHandler) Create(w http.ResponseWriter, r *http.Request) {
 func (h *companyHandler) Update(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	id, err := parseIDFromURL(r)
+	id, err := lib.ParseIDFromURL(r)
 	if err != nil {
 		HandleError(w, h.logger, err)
 		return
@@ -80,7 +79,7 @@ func (h *companyHandler) Update(w http.ResponseWriter, r *http.Request) {
 func (h *companyHandler) Delete(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	id, err := parseIDFromURL(r)
+	id, err := lib.ParseIDFromURL(r)
 	if err != nil {
 		HandleError(w, h.logger, err)
 		return
@@ -109,7 +108,7 @@ func (h *companyHandler) List(w http.ResponseWriter, r *http.Request) {
 func (h *companyHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	ctx := r.Context()
 
-	id, err := parseIDFromURL(r)
+	id, err := lib.ParseIDFromURL(r)
 	if err != nil {
 		HandleError(w, h.logger, err)
 		return
@@ -122,18 +121,4 @@ func (h *companyHandler) GetByID(w http.ResponseWriter, r *http.Request) {
 	}
 
 	HandleSuccess(w, http.StatusOK, result)
-}
-
-func parseIDFromURL(r *http.Request) (uuid.UUID, error) {
-	idStr := chi.URLParam(r, "id")
-	if idStr == "" {
-		return uuid.Nil, common.NewInvalidRequestParams()
-	}
-
-	id, err := uuid.Parse(idStr)
-	if err != nil {
-		return uuid.Nil, common.NewInvalidRequestParams()
-	}
-
-	return id, nil
 }

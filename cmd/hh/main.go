@@ -12,6 +12,8 @@ import (
 	"github.com/go-chi/chi"
 
 	"github.com/jackc/pgx/v5/pgxpool"
+	"github.com/minio/minio-go/v7"
+	"github.com/minio/minio-go/v7/pkg/credentials"
 	"go.uber.org/zap"
 )
 
@@ -22,7 +24,6 @@ func main() {
 	defer logger.Sync()
 
 	pool, err := createDBPool(ctx)
-
 	if err != nil {
 		logger.Error("failed to create pg pool", zap.Error(err))
 		os.Exit(1)
@@ -30,21 +31,34 @@ func main() {
 
 	defer pool.Close()
 
-	repo := repo.NewCompanyRepo(pool)
+	minio, err := createMinio()
+	if err != nil {
+		logger.Error("failed to create minio client", zap.Error(err))
+		os.Exit(1)
+	}
 
-	service := service.NewCompanyService(repo)
+	companyRepo := repo.NewCompanyRepo(pool)
 
-	h := handler.NewCompanyHandler(service, logger)
+	companyService := service.NewCompanyService(companyRepo)
+
+	logoService := service.NewLogoService(minio, companyRepo)
+
+	companyHandler := handler.NewCompanyHandler(companyService, logger)
+
+	logoHandler := handler.NewLogoHandler(logoService, logger)
 
 	r := chi.NewRouter()
 
-	r.Get("/companies", h.List)
-	r.Post("/companies", h.Create)
+	r.Get("/companies", companyHandler.List)
+	r.Post("/companies", companyHandler.Create)
 
 	r.Route("/companies/{id}", func(r chi.Router) {
-		r.Get("/", h.GetByID)
-		r.Put("/", h.Update)
-		r.Delete("/", h.Delete)
+		r.Get("/", companyHandler.GetByID)
+		r.Put("/", companyHandler.Update)
+		r.Delete("/", companyHandler.Delete)
+
+		r.Post("/logo", logoHandler.Upload)
+		r.Delete("/logo", logoHandler.Delete)
 	})
 
 	logger.Debug("server started :3000")
@@ -72,4 +86,20 @@ func createDBPool(ctx context.Context) (*pgxpool.Pool, error) {
 	}
 
 	return pool, nil
+}
+
+func createMinio() (*minio.Client, error) {
+	endpoint := os.Getenv("MINIO_ENDPOINT")
+	accessKey := os.Getenv("MINIO_ACCESS_KEY")
+	secretKey := os.Getenv("MINIO_SECRET_KEY")
+
+	client, err := minio.New(endpoint, &minio.Options{
+		Creds:  credentials.NewStaticV4(accessKey, secretKey, ""),
+		Secure: false,
+	})
+	if err != nil {
+		return nil, err
+	}
+
+	return client, nil
 }
