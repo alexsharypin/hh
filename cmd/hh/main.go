@@ -25,16 +25,14 @@ func main() {
 
 	pool, err := createDBPool(ctx)
 	if err != nil {
-		logger.Error("failed to create pg pool", zap.Error(err))
-		os.Exit(1)
+		panic(err)
 	}
 
 	defer pool.Close()
 
 	minio, err := createMinio()
 	if err != nil {
-		logger.Error("failed to create minio client", zap.Error(err))
-		os.Exit(1)
+		panic(err)
 	}
 
 	companyRepo := repo.NewCompanyRepo(pool)
